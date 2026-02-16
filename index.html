@@ -1,65 +1,45 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aprovado AI | Alves Dibo</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aprovado AI - Mentor Alves Dibo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Estilo Dark Mode Profissional (Azul e Verde Água) */
-        body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: #1e1e1e; padding: 30px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); width: 90%; max-width: 400px; text-align: center; border-top: 4px solid #00f2fe; }
-        h1 { color: #00f2fe; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: linear-gradient(90deg, #00f2fe, #4facfe); color: #121212; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { opacity: 0.8; transform: scale(1.02); }
-        .hidden { display: none; }
-        #app-content { max-width: 800px; width: 95%; }
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #0f1115;
+        color: #e5e7eb;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #1a1d23;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #3b82f6;
+        border-radius: 10px;
+      }
+      .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      .glass { background: rgba(26, 29, 35, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
     </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0"
+  }
+}
+</script>
 </head>
-<body>
-
-    <div id="login-screen" class="container">
-        <h1>Aprovado AI</h1>
-        <p>Digite seu e-mail cadastrado para acessar:</p>
-        <input type="email" id="user-email" placeholder="seu@email.com">
-        <button onclick="verificarAcesso()">Entrar no Portal</button>
-        <p style="font-size: 12px; margin-top: 15px;">Dúvidas? WhatsApp: (11) 97624-8699</p>
-    </div>
-
-    <div id="app-screen" class="hidden">
-        <div class="container" style="max-width: 800px;">
-            <h1>Dashboard de Estudos</h1>
-            <p>Bem-vinda, Elaine! O que vamos estudar hoje?</p>
-            <div id="ai-studio-app">
-                </div>
-        </div>
-    </div>
-
-    <script>
-        async function verificarAcesso() {
-            const email = document.getElementById('user-email').value;
-            const btn = document.querySelector('button');
-            btn.innerText = "Verificando...";
-
-            // LOGICA: Aqui você conecta com a sua planilha (Webhook)
-            // Por enquanto, vou deixar uma simulação. Para valer, usaremos seu link!
-            try {
-                // Exemplo de chamada para seu Webhook (ajustaremos o script da planilha depois)
-                // const response = await fetch('SEU_LINK_WEBHOOK?email=' + email);
-                
-                // Simulação de sucesso para você testar o layout:
-                if(email.includes('@')) { 
-                    document.getElementById('login-screen').classList.add('hidden');
-                    document.getElementById('app-screen').classList.remove('hidden');
-                } else {
-                    alert("E-mail não autorizado.");
-                    btn.innerText = "Entrar no Portal";
-                }
-            } catch (e) {
-                alert("Erro ao conectar. Tente novamente.");
-                btn.innerText = "Entrar no Portal";
-            }
-        }
-    </script>
-</body>
+  <body class="custom-scrollbar overflow-x-hidden">
+    <div id="root"></div>
+    <script type="module" src="index.tsx"></script>
+  </body>
 </html>
