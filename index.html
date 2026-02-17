@@ -120,7 +120,7 @@ async function gerarQuestaoIA() {
 
         async function tentarModeloAlternativo(prompt) {
              // Nome do modelo que costuma funcionar quando o Flash dá erro de ativação
-             const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + GEMINI_API_KEY;
+            const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=" + GEMINI_API_KEY;
              try {
                  const response = await fetch(url, {
                         method: 'POST',
@@ -174,6 +174,7 @@ async function gerarQuestaoIA() {
     </script>
 </body>
 </html>
+
 
 
 
