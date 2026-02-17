@@ -1,51 +1,60 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aprovado AI | Portal do Aluno</title>
+    <title>Aprovado AI | Portal de Estudos</title>
     <style>
         :root { --primary: #00f2fe; --secondary: #4facfe; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { background: var(--card); padding: 2rem; border-radius: 1.5rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5); width: 90%; max-width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
-        h1 { color: var(--primary); margin-bottom: 0.5rem; font-size: 1.8rem; }
-        p { color: #94a3b8; margin-bottom: 2rem; }
-        input { width: 100%; padding: 1rem; margin-bottom: 1rem; border-radius: 0.75rem; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 1rem; }
-        button { width: 100%; padding: 1rem; border: none; border-radius: 0.75rem; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #0f172a; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s; }
-        button:hover { transform: translateY(-2px); opacity: 0.9; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: var(--card); padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
         .hidden { display: none; }
-        .success-box { background: rgba(15, 23, 42, 0.5); padding: 1.5rem; border-radius: 1rem; margin-top: 1rem; border: 1px dashed var(--primary); }
+        textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: linear-gradient(90deg, var(--primary), var(--secondary)); color: #0f172a; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:hover { opacity: 0.9; transform: scale(1.02); }
+        .ia-box { background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; text-align: left; margin-top: 15px; border-left: 4px solid var(--primary); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-    <div id="login-area" class="container">
+    <div id="login-screen" class="container">
         <h1>Aprovado AI</h1>
-        <p>Olá Elaine! Acesse seu portal.</p>
+        <p>Olá! Valide seu acesso para entrar.</p>
         <input type="email" id="emailField" placeholder="Seu e-mail cadastrado">
-        <button id="btnEnter" onclick="autenticar()">Acessar Plataforma</button>
-        <div style="margin-top: 1.5rem; font-size: 0.8rem; color: #64748b;">Suporte: (11) 97624-8699</div>
+        <button id="btnEnter" onclick="autenticar()">Acessar Painel</button>
+        <p style="font-size: 0.7rem; color: #64748b; margin-top: 15px;">Suporte: (11) 97624-8699</p>
     </div>
 
-    <div id="app-area" class="container hidden">
-        <h1>Bem-vinda!</h1>
-        <div class="success-box">
-            <p style="color: var(--primary); margin-bottom: 5px;">Acesso Liberado para:</p>
-            <div id="user-mail" style="font-weight: bold;"></div>
+    <div id="app-screen" class="container hidden">
+        <h2>Painel do Aluno 🚀</h2>
+        <p>Logado como: <span id="user-display" style="color:var(--primary); font-weight: bold;"></span></p>
+        
+        <div class="ia-box">
+            <label>O que vamos estudar hoje?</label>
+            <textarea id="editalInput" rows="4" placeholder="Ex: Digite o tópico do edital aqui..."></textarea>
+            <button onclick="gerarQuestao()">Gerar Questão com IA</button>
         </div>
-        <p style="margin-top: 20px;">O simulado da <strong>Caixa 2026</strong> está pronto.</p>
-        <button onclick="testarGravacao()">Registrar Questão Teste</button>
-        <div id="status" style="margin-top: 15px; font-size: 0.8rem;"></div>
+
+        <div id="result-area" class="hidden">
+            <div class="ia-box" id="content-questao">
+                </div>
+            <button onclick="salvarResultado()">Salvar meu Desempenho</button>
+        </div>
+        <p id="status-msg" style="margin-top: 15px; font-size: 0.8rem;"></p>
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxk8bD-TTB1o3c_42Unuec7wxfnwBEK5kzwwEMDdvQrwyshS785CQn_-SpHu_620WZg/exec';
-        let userEmail = "";
+        // SEU LINK JÁ INSERIDO AQUI:
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxk8bD-TTB1o3c_42Unuec7wxfnwBEK5kzwwEMDvQrWyshS785CQn_-SpHu_620WZg/exec';
+        
+        let loggedEmail = "";
 
         async function autenticar() {
             const email = document.getElementById('emailField').value;
             const btn = document.getElementById('btnEnter');
-            if(!email) return alert("Digite seu e-mail");
+            if(!email) return alert("Por favor, digite seu e-mail.");
 
             btn.innerText = "Validando...";
             btn.disabled = true;
@@ -54,49 +63,55 @@
                 const resp = await fetch(`${SCRIPT_URL}?email=${email}`);
                 const data = await resp.json();
 
-                if(data.autorizado) {
-                    userEmail = email;
-                    document.getElementById('user-mail').innerText = email;
-                    document.getElementById('login-area').classList.add('hidden');
-                    document.getElementById('app-area').classList.remove('hidden');
+                if (data.autorizado) {
+                    loggedEmail = email;
+                    document.getElementById('user-display').innerText = email;
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('app-screen').classList.remove('hidden');
                 } else {
-                    alert("E-mail não autorizado na planilha.");
-                    btn.innerText = "Acessar Plataforma";
+                    alert("E-mail não autorizado ou status não é 'Ativo'.");
+                    btn.innerText = "Acessar Painel";
                     btn.disabled = false;
                 }
             } catch (e) {
-                alert("Erro de conexão. Verifique o Script da Planilha.");
-                btn.innerText = "Acessar Plataforma";
+                alert("Erro ao conectar com a planilha. Verifique o link do script.");
+                btn.innerText = "Acessar Painel";
                 btn.disabled = false;
             }
         }
 
-        async function testarGravacao() {
-            const status = document.getElementById('status');
-            status.innerText = "Enviando para a planilha...";
-            
+        function gerarQuestao() {
+            document.getElementById('status-msg').innerText = "Processando questão...";
+            setTimeout(() => {
+                document.getElementById('result-area').classList.remove('hidden');
+                document.getElementById('content-questao').innerHTML = "<strong>Simulação:</strong> Qual o próximo passo para o Aprovado AI?<br><br>A) Lançar e vender muito!<br>B) Ficar só testando.";
+                document.getElementById('status-msg').innerText = "";
+            }, 1000);
+        }
+
+        async function salvarResultado() {
+            const status = document.getElementById('status-msg');
+            status.innerText = "Salvando na planilha...";
+
             const payload = {
                 concurso: "Caixa 2026",
                 materia: "Geral",
-                numeroQuestao: "01",
+                numeroQuestao: "1",
                 resultado: "Acerto",
-                userEmail: userEmail
+                userEmail: loggedEmail
             };
 
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify(payload)
-                });
-                status.style.color = "#4ade80";
-                status.innerText = "Sucesso! Verifique a Coluna F na aba 'questoes'.";
-            } catch (err) {
-                status.innerText = "Erro ao salvar.";
-                status.style.color = "#f87171";
-            }
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(payload)
+            });
+
+            status.style.color = "#4ade80";
+            status.innerText = "Sucesso! Gravado na aba 'questoes' com o seu e-mail.";
         }
     </script>
 </body>
 </html>
+
 
