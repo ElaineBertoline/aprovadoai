@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -13,7 +12,7 @@
         textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 1rem; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: linear-gradient(90deg, var(--primary), var(--secondary)); color: #0f172a; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         button:hover { opacity: 0.9; transform: scale(1.02); }
-        .ia-box { background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; text-align: left; margin-top: 15px; border-left: 4px solid var(--primary); }
+        .ia-box { background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; text-align: left; margin-top: 15px; border-left: 4px solid var(--primary); line-height: 1.6; }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
     </style>
 </head>
@@ -33,21 +32,23 @@
         
         <div class="ia-box">
             <label>O que vamos estudar hoje?</label>
-            <textarea id="editalInput" rows="4" placeholder="Ex: Digite o tópico do edital aqui..."></textarea>
-            <button onclick="gerarQuestao()">Gerar Questão com IA</button>
+            <textarea id="editalInput" rows="4" placeholder="Ex: Analista FAPESP - Banca Vunesp. Gere uma questão sobre Redes."></textarea>
+            <button id="btnIA" onclick="gerarQuestaoIA()">Gerar Questão com IA Real</button>
         </div>
 
         <div id="result-area" class="hidden">
-            <div class="ia-box" id="content-questao">
-                </div>
+            <div class="ia-box" id="content-questao"></div>
             <button onclick="salvarResultado()">Salvar meu Desempenho</button>
         </div>
         <p id="status-msg" style="margin-top: 15px; font-size: 0.8rem;"></p>
     </div>
 
     <script>
-        // SEU LINK JÁ INSERIDO AQUI:
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyayYfXYKd-fJxPur8F6sWHTbobdSoFuSd3O__AXi5kX-ha6UJd7vxzNIZmbAZOk-gx/exec';
+        
+        // --- INSIRA SUA CHAVE ABAIXO ---
+       // const GEMINI_API_KEY = 'COLE_SUA_API_KEY_AQUI'; 
+        const GEMINI_API_KEY = 'AIzaSyCbYOJhkpzzRhkUtNECslXP0cBbfdYLelE'; 
         
         let loggedEmail = "";
 
@@ -55,64 +56,75 @@
             const email = document.getElementById('emailField').value;
             const btn = document.getElementById('btnEnter');
             if(!email) return alert("Por favor, digite seu e-mail.");
-
             btn.innerText = "Validando...";
             btn.disabled = true;
 
             try {
                 const resp = await fetch(`${SCRIPT_URL}?email=${email}`);
                 const data = await resp.json();
-
                 if (data.autorizado) {
                     loggedEmail = email;
                     document.getElementById('user-display').innerText = email;
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('app-screen').classList.remove('hidden');
                 } else {
-                    alert("E-mail não autorizado ou status não é 'Ativo'.");
+                    alert("Acesso negado.");
                     btn.innerText = "Acessar Painel";
                     btn.disabled = false;
                 }
             } catch (e) {
-                alert("Erro ao conectar com a planilha. Verifique o link do script.");
+                alert("Erro de conexão.");
                 btn.innerText = "Acessar Painel";
                 btn.disabled = false;
             }
         }
 
-        function gerarQuestao() {
-            document.getElementById('status-msg').innerText = "Processando questão...";
-            setTimeout(() => {
+        async function gerarQuestaoIA() {
+            const input = document.getElementById('editalInput').value;
+            const status = document.getElementById('status-msg');
+            const btn = document.getElementById('btnIA');
+            if(!input) return alert("Digite o concurso/matéria!");
+
+            status.innerText = "IA pesquisando e gerando questão...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `Você é um mentor especialista em concursos. Com base no pedido: "${input}", identifique o cargo e a banca. Gere uma questão de múltipla escolha inédita (A a E) baseada em editais reais. No final, indique a resposta correta. Use negrito para formatar.` }] }]
+                    })
+                });
+                
+                const data = await response.json();
+                const textoIA = data.candidates[0].content.parts[0].text;
+
+                document.getElementById('content-questao').innerHTML = textoIA.replace(/\n/g, '<br>');
                 document.getElementById('result-area').classList.remove('hidden');
-                document.getElementById('content-questao').innerHTML = "<strong>Simulação:</strong> Qual o próximo passo para o Aprovado AI?<br><br>A) Lançar e vender muito!<br>B) Ficar só testando.";
-                document.getElementById('status-msg').innerText = "";
-            }, 1000);
+                status.innerText = "Questão gerada com sucesso!";
+            } catch (e) {
+                status.innerText = "Erro ao chamar a IA. Verifique sua chave API.";
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+            }
         }
 
         async function salvarResultado() {
             const status = document.getElementById('status-msg');
             status.innerText = "Salvando na planilha...";
-
             const payload = {
-                concurso: "Caixa 2026",
-                materia: "Geral",
+                concurso: document.getElementById('editalInput').value.substring(0,30),
+                materia: "IA Generativa",
                 numeroQuestao: "1",
-                resultado: "Acerto",
+                resultado: "Salvo",
                 userEmail: loggedEmail
             };
-
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(payload)
-            });
-
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
             status.style.color = "#4ade80";
-            status.innerText = "Sucesso! Gravado na aba 'questoes' com o seu e-mail.";
+            status.innerText = "Desempenho gravado na planilha!";
         }
     </script>
 </body>
 </html>
-
-
-
