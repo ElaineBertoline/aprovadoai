@@ -85,11 +85,11 @@ async function gerarQuestaoIA() {
             const btn = document.getElementById('btnIA');
             if(!input) return alert("Digite o concurso/matéria!");
 
-            status.innerText = "IA pesquisando e gerando questão real...";
+            status.innerText = "IA pesquisando edital e gerando questão...";
             btn.disabled = true;
 
             try {
-                // ALTERAÇÃO AQUI: Voltamos para v1beta mas garantindo o modelo que o AI Studio te mostrou
+                // Rota atualizada para o modelo mais moderno disponível no seu painel
                 const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
 
                 const response = await fetch(url, {
@@ -103,8 +103,7 @@ async function gerarQuestaoIA() {
                 const data = await response.json();
                 
                 if(data.error) {
-                    // Se o erro persistir, vamos tentar o modelo mais novo que aparece no seu print
-                    status.innerText = "Tentando modelo alternativo...";
+                    // Se der erro, tentamos a rota alternativa de texto puro
                     return tentarModeloAlternativo(input);
                 }
 
@@ -113,12 +112,33 @@ async function gerarQuestaoIA() {
                 document.getElementById('result-area').classList.remove('hidden');
                 status.innerText = "Questão gerada com sucesso!";
             } catch (e) {
-                status.innerText = "Erro de conexão com a IA.";
+                status.innerText = "Erro de conexão. Verifique sua internet.";
             } finally {
                 btn.disabled = false;
             }
         }
 
+        async function tentarModeloAlternativo(prompt) {
+             // Nome do modelo que costuma funcionar quando o Flash dá erro de ativação
+             const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + GEMINI_API_KEY;
+             try {
+                 const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: "Gere uma questão de concurso sobre: " + prompt }] }] })
+                 });
+                 const data = await response.json();
+                 if(data.candidates) {
+                     document.getElementById('content-questao').innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+                     document.getElementById('result-area').classList.remove('hidden');
+                     document.getElementById('status-msg').innerText = "Gerado com sucesso!";
+                 } else {
+                     document.getElementById('status-msg').innerText = "Chave ainda inativa no Google. Tente criar uma nova 'API Key in new project'.";
+                 }
+             } catch(e) {
+                 document.getElementById('status-msg').innerText = "Erro persistente na API.";
+             }
+        }
         // Função de segurança caso o 1.5-flash não responda
         async function tentarModeloAlternativo(prompt) {
              const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + GEMINI_API_KEY;
@@ -154,6 +174,7 @@ async function gerarQuestaoIA() {
     </script>
 </body>
 </html>
+
 
 
 
