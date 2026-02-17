@@ -48,7 +48,7 @@
         
         // --- INSIRA SUA CHAVE ABAIXO ---
    
-        const GEMINI_API_KEY = 'AIzaSyCbYOJhkpzzRhkUtNECslXP0cBbfdYLelE'; 
+        const GEMINI_API_KEY = 'AIzaSyALAnx75qf7Gg3ua6TY_8IzwWKXdCoPDq8'; 
         
         let loggedEmail = "";
 
@@ -90,7 +90,7 @@ async function gerarQuestaoIA() {
 
             try {
                 // Rota atualizada para o modelo mais moderno disponível no seu painel
-                const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
+              const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + GEMINI_API_KEY;
 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -174,6 +174,7 @@ async function gerarQuestaoIA() {
     </script>
 </body>
 </html>
+
 
 
 
