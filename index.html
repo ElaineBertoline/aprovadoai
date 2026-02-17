@@ -10,7 +10,6 @@
         .container { background: var(--card); padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
         .hidden { display: none; }
         textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 1rem; outline: none; }
-        textarea:focus { border-color: var(--primary); }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: linear-gradient(90deg, var(--primary), var(--secondary)); color: #0f172a; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         button:hover { opacity: 0.9; transform: scale(1.02); }
         button:disabled { background: #475569; cursor: not-allowed; }
@@ -34,7 +33,7 @@
         
         <div class="ia-box">
             <label>Qual concurso ou cargo vamos estudar?</label>
-            <textarea id="editalInput" rows="4" placeholder="Ex: Analista FAPESP - Vunesp. Gere uma questão de Redes."></textarea>
+            <textarea id="editalInput" rows="4" placeholder="Ex: Analista FAPESP - Vunesp."></textarea>
             <button id="btnIA" onclick="gerarQuestaoIA()">Gerar Questão com IA Real</button>
         </div>
 
@@ -46,7 +45,7 @@
     </div>
 
     <script>
-        // CONFIGURAÇÕES INTEGRADAS
+        // CONFIGURAÇÕES VINDAS DA ELAINE
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyayYfXYKd-fJxPur8F6sWHTbobdSoFuSd3O__AXi5kX-ha6UJd7vxzNIZmbAZOk-gx/exec';
         const GEMINI_API_KEY = 'AIzaSyALAnx75qf7Gg3ua6TY_8IzwWKXdCoPDq8';
         
@@ -55,39 +54,36 @@
         async function autenticar() {
             const email = document.getElementById('emailField').value;
             const btn = document.getElementById('btnEnter');
-            if(!email) return alert("Por favor, digite seu e-mail.");
-
+            if(!email) return alert("Digite seu e-mail.");
             btn.innerText = "Validando...";
             btn.disabled = true;
 
             try {
                 const resp = await fetch(`${SCRIPT_URL}?email=${email}`);
                 const data = await resp.json();
-
                 if (data.autorizado) {
                     loggedEmail = email;
                     document.getElementById('user-display').innerText = email;
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('app-screen').classList.remove('hidden');
                 } else {
-                    alert("E-mail não autorizado ou status Inativo.");
-                    btn.innerText = "Acessar Painel";
-                    btn.disabled = false;
+                    alert("E-mail não autorizado.");
+                    btn.innerText = "Acessar Painel"; btn.disabled = false;
                 }
             } catch (e) {
-                alert("Erro ao conectar com o banco de dados.");
-                btn.innerText = "Acessar Painel";
-                btn.disabled = false;
+                alert("Erro na planilha. Verifique o link do script.");
+                btn.innerText = "Acessar Painel"; btn.disabled = false;
             }
         }
 
         async function chamarIA(modelo, prompt) {
+            // Rota v1beta que é a compatível com Gemini 3 Preview
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: `Você é um mentor especialista em concursos. Com base no pedido: "${prompt}", identifique o cargo e a banca. Gere uma questão de múltipla escolha inédita (A a E) baseada em editais reais. No final, indique a resposta correta. Use negrito para formatar.` }] }]
+                    contents: [{ parts: [{ text: "Mentor de concursos. Gere uma questão inédita sobre: " + prompt }] }]
                 })
             });
             return await response.json();
@@ -97,28 +93,42 @@
             const input = document.getElementById('editalInput').value;
             const status = document.getElementById('status-msg');
             const btn = document.getElementById('btnIA');
-            if(!input) return alert("Digite o concurso ou matéria!");
+            if(!input) return alert("Digite o concurso!");
 
-            status.innerText = "Conectando ao servidor de IA...";
+            status.innerText = "IA Gerando Questão...";
             btn.disabled = true;
 
             try {
-                // Tenta primeiro o Flash
+                // Tenta o modelo padrão do seu painel
                 let data = await chamarIA("gemini-1.5-flash", input);
                 
-                // Se der erro de modelo não encontrado, tenta o Pro
+                // Se der erro de "not found", tenta o pro
                 if (data.error) {
-                    status.innerText = "Otimizando conexão estável...";
-                    data = await chamarIA("gemini-1.5-pro", input);
+                    data = await chamarIA("gemini-pro", input);
                 }
 
-                if(data.candidates && data.candidates[0].content.parts[0].text) {
+                if(data.candidates) {
                     const textoIA = data.candidates[0].content.parts[0].text;
                     document.getElementById('content-questao').innerHTML = textoIA.replace(/\n/g, '<br>');
                     document.getElementById('result-area').classList.remove('hidden');
-                    status.innerText = "Questão gerada com sucesso!";
-                    status.style.color
+                    status.innerText = "Sucesso!";
+                } else {
+                    status.innerText = "Erro: " + (data.error ? data.error.message : "Tente novamente.");
+                }
+            } catch (e) {
+                status.innerText = "Erro de conexão.";
+            } finally {
+                btn.disabled = false;
+            }
+        }
 
+        async function salvarResultado() {
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ userEmail: loggedEmail, concurso: "IA" }) });
+            document.getElementById('status-msg').innerText = "Desempenho salvo!";
+        }
+    </script>
+</body>
+</html>
 
 
 
