@@ -78,7 +78,7 @@
 
         async function chamarIA(modelo, prompt) {
             // Rota v1beta que é a compatível com Gemini 3 Preview
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`;
+           const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -129,6 +129,7 @@
     </script>
 </body>
 </html>
+
 
 
 
