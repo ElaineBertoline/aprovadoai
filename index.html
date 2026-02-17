@@ -78,34 +78,34 @@
                 btn.disabled = false;
             }
         }
+        
 async function gerarQuestaoIA() {
             const input = document.getElementById('editalInput').value;
             const status = document.getElementById('status-msg');
             const btn = document.getElementById('btnIA');
-            
             if(!input) return alert("Digite o concurso/matéria!");
 
-            status.innerText = "IA pesquisando e gerando questão...";
+            status.innerText = "IA pesquisando e gerando questão real...";
             btn.disabled = true;
 
             try {
-                // Montagem correta do link usando a chave da linha 52
-                const url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
+                // ALTERAÇÃO AQUI: Voltamos para v1beta mas garantindo o modelo que o AI Studio te mostrou
+                const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
 
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: "Você é um mentor especialista em concursos. Com base no pedido: '" + input + "', identifique o cargo e a banca. Gere uma questão de múltipla escolha inédita (A a E) baseada em editais reais. No final, indique a resposta correta. Use negrito para formatar." }] }]
+                        contents: [{ parts: [{ text: "Aja como um mentor de concursos. Com base em: '" + input + "', gere uma questão de múltipla escolha inédita (A-E) baseada no estilo da banca. Indique a resposta correta no fim. Use negrito." }] }]
                     })
                 });
                 
                 const data = await response.json();
                 
-                // Verifica se o Google retornou erro de chave
                 if(data.error) {
-                    status.innerText = "Erro na Chave: " + data.error.message;
-                    return;
+                    // Se o erro persistir, vamos tentar o modelo mais novo que aparece no seu print
+                    status.innerText = "Tentando modelo alternativo...";
+                    return tentarModeloAlternativo(input);
                 }
 
                 const textoIA = data.candidates[0].content.parts[0].text;
@@ -114,12 +114,29 @@ async function gerarQuestaoIA() {
                 status.innerText = "Questão gerada com sucesso!";
             } catch (e) {
                 status.innerText = "Erro de conexão com a IA.";
-                console.error(e);
             } finally {
                 btn.disabled = false;
             }
         }
 
+        // Função de segurança caso o 1.5-flash não responda
+        async function tentarModeloAlternativo(prompt) {
+             const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + GEMINI_API_KEY;
+             const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "Gere uma questão de concurso sobre: " + prompt }] }] })
+             });
+             const data = await response.json();
+             if(data.candidates) {
+                 document.getElementById('content-questao').innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+                 document.getElementById('result-area').classList.remove('hidden');
+                 document.getElementById('status-msg').innerText = "Gerado com modelo estável!";
+             } else {
+                 document.getElementById('status-msg').innerText = "Erro persistente. Verifique se a API Key está ativa no AI Studio.";
+             }
+        }
+        
         async function salvarResultado() {
             const status = document.getElementById('status-msg');
             status.innerText = "Salvando na planilha...";
@@ -137,6 +154,7 @@ async function gerarQuestaoIA() {
     </script>
 </body>
 </html>
+
 
 
 
