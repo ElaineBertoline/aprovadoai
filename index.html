@@ -66,18 +66,18 @@
             } catch (e) { alert("Erro na planilha."); }
         }
 
-        async function gerarQuestaoIA() {
+async function gerarQuestaoIA() {
     const input = document.getElementById('editalInput').value;
     const status = document.getElementById('status-msg');
     const btn = document.getElementById('btnIA');
     if(!input) return alert("Digite o tema!");
 
-    status.innerText = "IA Gerando Questão...";
+    status.innerText = "IA Gerando Questão (Versão Pro)...";
     btn.disabled = true;
 
     try {
-        // Mudamos para o modelo 1.5-PRO e a versão v1beta que é a mais estável para você
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+        // MUDANÇA: Usando o modelo Pro Preview que aparece na sua lista
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-pro-preview:generateContent?key=${GEMINI_API_KEY}`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -95,9 +95,9 @@
             document.getElementById('result-area').classList.remove('hidden');
             status.innerText = "Sucesso!";
         } else {
-            // Se der erro, vamos mostrar exatamente o que o Google respondeu
-            console.error("Resposta completa do Google:", data);
-            status.innerText = "Erro: " + (data.error ? data.error.message : "Tente novamente.");
+            // Se o Google reclamar do nome, o erro vai aparecer aqui no painel
+            status.innerText = "Erro do Google: " + (data.error ? data.error.message : "Tente novamente.");
+            console.log("Erro completo:", data);
         }
     } catch (e) {
         status.innerText = "Erro de conexão.";
@@ -105,7 +105,6 @@
         btn.disabled = false;
     }
 }
-
         async function salvarResultado() {
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ userEmail: loggedEmail, concurso: "IA" }) });
             document.getElementById('status-msg').innerText = "Salvo!";
@@ -113,4 +112,5 @@
     </script>
 </body>
 </html>
+
 
