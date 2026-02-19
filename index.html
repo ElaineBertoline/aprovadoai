@@ -66,41 +66,44 @@
             }
         }
 
-      async function gerarQuestaoIA() {
-    const input = document.getElementById('editalInput').value;
-    const status = document.getElementById('status-msg');
-    const btn = document.getElementById('btnIA');
-    if(!input) return alert("Digite o tema!");
-    
-    status.innerText = "IA Gerando Questão...";
-    btn.disabled = true;
+    // 2. FUNÇÃO DA IA ATUALIZADA PARA GEMINI 3
+        async function gerarQuestaoIA() {
+            const input = document.getElementById('editalInput').value;
+            const status = document.getElementById('status-msg');
+            const btn = document.getElementById('btnIA');
+            if(!input) return alert("Digite o tema!");
 
-    try {
-        // Esta URL deve estar limpa, sem o nome do seu site antes
-        const urlIA = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-        
-        const response = await fetch(urlIA, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: "Gere uma questão de concurso sobre: " + input }] }]
-            })
-        });
-        
-        const data = await response.json();
-        if(data.candidates) {
-            document.getElementById('content-questao').innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
-            document.getElementById('result-area').classList.remove('hidden');
-            status.innerText = "Sucesso!";
-        } else {
-            status.innerText = "Erro na IA: " + (data.error ? data.error.message : "Tente novamente.");
+            status.innerText = "Conectando ao Gemini 3...";
+            btn.disabled = true;
+
+            try {
+                // USANDO O MODELO QUE APARECE NO SEU PAINEL: gemini-3.0-flash-preview
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: "Gere uma questão inédita de concurso sobre: " + input }] }]
+                    })
+                });
+                
+                const data = await response.json();
+
+                if(data.candidates && data.candidates[0].content) {
+                    const textoIA = data.candidates[0].content.parts[0].text;
+                    document.getElementById('content-questao').innerHTML = textoIA.replace(/\n/g, '<br>');
+                    document.getElementById('result-area').classList.remove('hidden');
+                    status.innerText = "Questão gerada com sucesso!";
+                } else {
+                    status.innerText = "Erro: " + (data.error ? data.error.message : "Tente o tema novamente.");
+                }
+            } catch (e) {
+                status.innerText = "Erro de conexão com a IA.";
+            } finally {
+                btn.disabled = false;
+            }
         }
-    } catch (e) {
-        status.innerText = "Erro de conexão.";
-    } finally {
-        btn.disabled = false;
-    }
-}
         async function salvarResultado() {
             const status = document.getElementById('status-msg');
             status.innerText = "Salvando...";
@@ -116,6 +119,7 @@
     </script>
 </body>
 </html>
+
 
 
 
