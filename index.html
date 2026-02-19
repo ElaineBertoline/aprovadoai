@@ -39,21 +39,27 @@
 
         <div id="result-area" class="hidden">
             <div class="ia-box" id="content-questao"></div>
-            <button onclick="salvarResultado()">Salvar meu Desempenho</button>
+            <button id="btnSave" onclick="salvarResultado()">Salvar meu Desempenho</button>
         </div>
         <p id="status-msg" style="margin-top: 15px; font-size: 0.8rem;"></p>
     </div>
 
     <script>
-        // CONFIGURAÇÕES (Verificadas nos seus prints)
+        // CONFIGURAÇÕES GERAIS
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdgjyDoV-d9ayAWjLnw3VgvLnT15AKdzIgxil-kHNerVEFOA3SsMhDOQA7iuAOJO5R/exec';
         const GEMINI_API_KEY = 'AIzaSyBLTDmAxgQ9XFmJIj570zCLGO68URXjVZE';
         
         let loggedEmail = "";
 
+        // 1. FUNÇÃO DE LOGIN (PLANILHA)
         async function autenticar() {
             const email = document.getElementById('emailField').value;
+            const btn = document.getElementById('btnEnter');
             if(!email) return alert("Digite seu e-mail.");
+            
+            btn.innerText = "Validando...";
+            btn.disabled = true;
+
             try {
                 const resp = await fetch(`${SCRIPT_URL}?email=${email}`);
                 const data = await resp.json();
@@ -62,55 +68,85 @@
                     document.getElementById('user-display').innerText = email;
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('app-screen').classList.remove('hidden');
-                } else { alert("Acesso negado."); }
-            } catch (e) { alert("Erro na planilha."); }
+                } else {
+                    alert("E-mail não autorizado.");
+                    btn.innerText = "Acessar Painel"; btn.disabled = false;
+                }
+            } catch (e) {
+                alert("Erro ao conectar com a planilha. Verifique o link do script.");
+                btn.innerText = "Acessar Painel"; btn.disabled = false;
+            }
         }
 
-async function gerarQuestaoIA() {
-    const input = document.getElementById('editalInput').value;
-    const status = document.getElementById('status-msg');
-    const btn = document.getElementById('btnIA');
-    if(!input) return alert("Digite o tema!");
+        // 2. FUNÇÃO DA IA (ADAPTÁVEL)
+        async function gerarQuestaoIA() {
+            const input = document.getElementById('editalInput').value;
+            const status = document.getElementById('status-msg');
+            const btn = document.getElementById('btnIA');
+            if(!input) return alert("Digite o tema!");
 
-    status.innerText = "IA Gerando Questão (Versão Pro)...";
-    btn.disabled = true;
+            status.innerText = "Buscando melhor modelo de IA...";
+            btn.disabled = true;
 
-    try {
-        // MUDANÇA: Usando o modelo Pro Preview que aparece na sua lista
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-pro-preview:generateContent?key=${GEMINI_API_KEY}`;
+            try {
+                // Descobre quais modelos sua chave aceita agora
+                const listResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+                const listData = await listResp.json();
+                
+                // Pega o modelo mais moderno disponível (que suporte generateContent)
+                const model = listData.models.find(m => m.supportedGenerationMethods.includes("generateContent"));
+                const modelPath = model ? model.name : "models/gemini-pro";
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: "Atue como mentor de concursos. Gere uma questão inédita de múltipla escolha sobre: " + input }] }]
-            })
-        });
-        
-        const data = await response.json();
+                status.innerText = "IA Gerando Questão...";
 
-        if(data.candidates && data.candidates[0].content) {
-            const textoIA = data.candidates[0].content.parts[0].text;
-            document.getElementById('content-questao').innerHTML = textoIA.replace(/\n/g, '<br>');
-            document.getElementById('result-area').classList.remove('hidden');
-            status.innerText = "Sucesso!";
-        } else {
-            // Se o Google reclamar do nome, o erro vai aparecer aqui no painel
-            status.innerText = "Erro do Google: " + (data.error ? data.error.message : "Tente novamente.");
-            console.log("Erro completo:", data);
+                const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${GEMINI_API_KEY}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: "Atue como mentor de concursos. Gere uma questão inédita de múltipla escolha sobre: " + input }] }]
+                    })
+                });
+                
+                const data = await response.json();
+
+                if(data.candidates && data.candidates[0].content) {
+                    const textoIA = data.candidates[0].content.parts[0].text;
+                    document.getElementById('content-questao').innerHTML = textoIA.replace(/\n/g, '<br>');
+                    document.getElementById('result-area').classList.remove('hidden');
+                    status.innerText = "Questão gerada com sucesso!";
+                } else {
+                    status.innerText = "Erro: " + (data.error ? data.error.message : "Tente novamente.");
+                }
+            } catch (e) {
+                status.innerText = "Erro de conexão com a IA.";
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+            }
         }
-    } catch (e) {
-        status.innerText = "Erro de conexão.";
-    } finally {
-        btn.disabled = false;
-    }
-}
+
+        // 3. FUNÇÃO SALVAR (PLANILHA)
         async function salvarResultado() {
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ userEmail: loggedEmail, concurso: "IA" }) });
-            document.getElementById('status-msg').innerText = "Salvo!";
+            const status = document.getElementById('status-msg');
+            const btn = document.getElementById('btnSave');
+            status.innerText = "Salvando na planilha...";
+            btn.disabled = true;
+
+            try {
+                await fetch(SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    body: JSON.stringify({ userEmail: loggedEmail, concurso: "Gerado por IA" }) 
+                });
+                status.innerText = "Desempenho salvo com sucesso!";
+            } catch (e) {
+                status.innerText = "Erro ao salvar na planilha.";
+            } finally {
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
 </html>
-
-
