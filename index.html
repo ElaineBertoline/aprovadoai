@@ -67,35 +67,44 @@
         }
 
         async function gerarQuestaoIA() {
-            const input = document.getElementById('editalInput').value;
-            const status = document.getElementById('status-msg');
-            if(!input) return alert("Digite o tema!");
+    const input = document.getElementById('editalInput').value;
+    const status = document.getElementById('status-msg');
+    const btn = document.getElementById('btnIA');
+    if(!input) return alert("Digite o tema!");
 
-            status.innerText = "Gerando com Gemini 3...";
-            
-            try {
-                // ATUALIZAÇÃO PARA GEMINI 3 FLASH PREVIEW (Conforme seu print)
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
+    status.innerText = "IA Gerando Questão...";
+    btn.disabled = true;
 
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: "Gere uma questão de concurso sobre: " + input }] }]
-                    })
-                });
-                
-                const data = await response.json();
+    try {
+        // Mudamos para o modelo 1.5-PRO e a versão v1beta que é a mais estável para você
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
 
-                if(data.candidates) {
-                    document.getElementById('content-questao').innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
-                    document.getElementById('result-area').classList.remove('hidden');
-                    status.innerText = "Sucesso!";
-                } else {
-                    status.innerText = "Erro: " + (data.error ? data.error.message : "Tente novamente.");
-                }
-            } catch (e) { status.innerText = "Erro de conexão."; }
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: "Atue como mentor de concursos. Gere uma questão inédita de múltipla escolha sobre: " + input }] }]
+            })
+        });
+        
+        const data = await response.json();
+
+        if(data.candidates && data.candidates[0].content) {
+            const textoIA = data.candidates[0].content.parts[0].text;
+            document.getElementById('content-questao').innerHTML = textoIA.replace(/\n/g, '<br>');
+            document.getElementById('result-area').classList.remove('hidden');
+            status.innerText = "Sucesso!";
+        } else {
+            // Se der erro, vamos mostrar exatamente o que o Google respondeu
+            console.error("Resposta completa do Google:", data);
+            status.innerText = "Erro: " + (data.error ? data.error.message : "Tente novamente.");
         }
+    } catch (e) {
+        status.innerText = "Erro de conexão.";
+    } finally {
+        btn.disabled = false;
+    }
+}
 
         async function salvarResultado() {
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ userEmail: loggedEmail, concurso: "IA" }) });
@@ -104,3 +113,4 @@
     </script>
 </body>
 </html>
+
