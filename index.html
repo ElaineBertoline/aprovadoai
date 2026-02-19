@@ -45,20 +45,15 @@
     </div>
 
     <script>
-        // 1. DADOS DE CONEXÃO
+        // CONFIGURAÇÕES (Verificadas nos seus prints)
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdgjyDoV-d9ayAWjLnw3VgvLnT15AKdzIgxil-kHNerVEFOA3SsMhDOQA7iuAOJO5R/exec';
         const GEMINI_API_KEY = 'AIzaSyBLTDmAxgQ9XFmJIj570zCLGO68URXjVZE';
         
         let loggedEmail = "";
 
-        // 2. AUTENTICAÇÃO (Login na Planilha)
         async function autenticar() {
             const email = document.getElementById('emailField').value;
-            const btn = document.getElementById('btnEnter');
             if(!email) return alert("Digite seu e-mail.");
-            btn.innerText = "Validando...";
-            btn.disabled = true;
-
             try {
                 const resp = await fetch(`${SCRIPT_URL}?email=${email}`);
                 const data = await resp.json();
@@ -67,83 +62,45 @@
                     document.getElementById('user-display').innerText = email;
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('app-screen').classList.remove('hidden');
-                } else {
-                    alert("E-mail não autorizado.");
-                    btn.innerText = "Acessar Painel"; btn.disabled = false;
-                }
-            } catch (e) {
-                alert("Erro ao conectar com a planilha.");
-                btn.innerText = "Acessar Painel"; btn.disabled = false;
-            }
+                } else { alert("Acesso negado."); }
+            } catch (e) { alert("Erro na planilha."); }
         }
 
-        // 3. GERAR QUESTÃO (IA UNIVERSAL - GEMINI PRO)
         async function gerarQuestaoIA() {
             const input = document.getElementById('editalInput').value;
             const status = document.getElementById('status-msg');
-            const btn = document.getElementById('btnIA');
             if(!input) return alert("Digite o tema!");
 
-            status.innerText = "IA Gerando Questão...";
-            btn.disabled = true;
-
+            status.innerText = "Gerando com Gemini 3...";
+            
             try {
-                // Rota v1beta com modelo Gemini-Pro (O mais compatível)
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+                // ATUALIZAÇÃO PARA GEMINI 3 FLASH PREVIEW (Conforme seu print)
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
 
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: "Atue como mentor de concursos. Gere uma questão inédita de múltipla escolha sobre: " + input }] }]
+                        contents: [{ parts: [{ text: "Gere uma questão de concurso sobre: " + input }] }]
                     })
                 });
                 
                 const data = await response.json();
 
-                if(data.candidates && data.candidates[0].content) {
-                    const textoIA = data.candidates[0].content.parts[0].text;
-                    document.getElementById('content-questao').innerHTML = textoIA.replace(/\n/g, '<br>');
+                if(data.candidates) {
+                    document.getElementById('content-questao').innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
                     document.getElementById('result-area').classList.remove('hidden');
-                    status.innerText = "Questão gerada com sucesso!";
+                    status.innerText = "Sucesso!";
                 } else {
-                    // Se der erro, mostraremos o que o Google diz exatamente
-                    status.innerText = "Erro do Google: " + (data.error ? data.error.message : "Tente novamente.");
+                    status.innerText = "Erro: " + (data.error ? data.error.message : "Tente novamente.");
                 }
-            } catch (e) {
-                status.innerText = "Erro de conexão com o servidor.";
-            } finally {
-                btn.disabled = false;
-            }
+            } catch (e) { status.innerText = "Erro de conexão."; }
         }
 
-        // 4. SALVAR RESULTADO
         async function salvarResultado() {
-            try {
-                await fetch(SCRIPT_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    body: JSON.stringify({ userEmail: loggedEmail, concurso: "IA" }) 
-                });
-                document.getElementById('status-msg').innerText = "Desempenho salvo!";
-            } catch (e) {
-                document.getElementById('status-msg').innerText = "Erro ao salvar.";
-            }
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ userEmail: loggedEmail, concurso: "IA" }) });
+            document.getElementById('status-msg').innerText = "Salvo!";
         }
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
