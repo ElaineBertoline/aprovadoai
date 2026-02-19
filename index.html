@@ -45,13 +45,13 @@
     </div>
 
     <script>
-        // CONFIGURAÇÕES GERAIS
+        // CONFIGURAÇÕES GERAIS - Links conferidos e corretos!
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwRyKfU4RvBgTpWFzthxdkqxtJHh9KMQdE5hDAiyZZiHuG_sfH7PDhIOuf9gorO5WQu/exec';
         const GEMINI_API_KEY = 'AIzaSyBLTDmAxgQ9XFmJIj570zCLGO68URXjVZE';
         
         let loggedEmail = "";
 
-        // 1. FUNÇÃO DE LOGIN (PLANILHA)
+        // 1. FUNÇÃO DE LOGIN - Atualizada para evitar cache
         async function autenticar() {
             const email = document.getElementById('emailField').value;
             const btn = document.getElementById('btnEnter');
@@ -61,7 +61,8 @@
             btn.disabled = true;
 
             try {
-                const resp = await fetch(`${SCRIPT_URL}?email=${email}`);
+                // Adicionado um parâmetro de tempo (?t=...) para o navegador buscar sempre o dado novo
+                const resp = await fetch(`${SCRIPT_URL}?email=${email}&t=${new Date().getTime()}`);
                 const data = await resp.json();
                 if (data.autorizado) {
                     loggedEmail = email;
@@ -69,35 +70,32 @@
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('app-screen').classList.remove('hidden');
                 } else {
-                    alert("E-mail não autorizado.");
+                    alert("E-mail não autorizado ou inativo na planilha.");
                     btn.innerText = "Acessar Painel"; btn.disabled = false;
                 }
             } catch (e) {
-                alert("Erro ao conectar com a planilha. Verifique o link do script.");
+                alert("Erro de conexão. Verifique se o script da planilha está publicado para 'Qualquer pessoa'.");
                 btn.innerText = "Acessar Painel"; btn.disabled = false;
             }
         }
 
-        // 2. FUNÇÃO DA IA (ADAPTÁVEL)
+        // 2. FUNÇÃO DA IA - Adaptável e estável
         async function gerarQuestaoIA() {
             const input = document.getElementById('editalInput').value;
             const status = document.getElementById('status-msg');
             const btn = document.getElementById('btnIA');
             if(!input) return alert("Digite o tema!");
 
-            status.innerText = "Buscando melhor modelo de IA...";
+            status.innerText = "IA Gerando Questão...";
             btn.disabled = true;
 
             try {
-                // Descobre quais modelos sua chave aceita agora
+                // Buscando o modelo dinamicamente para não dar erro de "not found"
                 const listResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
                 const listData = await listResp.json();
                 
-                // Pega o modelo mais moderno disponível (que suporte generateContent)
                 const model = listData.models.find(m => m.supportedGenerationMethods.includes("generateContent"));
-                const modelPath = model ? model.name : "models/gemini-pro";
-
-                status.innerText = "IA Gerando Questão...";
+                const modelPath = model ? model.name : "models/gemini-1.5-flash";
 
                 const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -105,7 +103,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: "Atue como mentor de concursos. Gere uma questão inédita de múltipla escolha sobre: " + input }] }]
+                        contents: [{ parts: [{ text: "Atue como mentor de concursos. Gere uma questão inédita de múltipla escolha com gabarito sobre: " + input }] }]
                     })
                 });
                 
@@ -117,30 +115,33 @@
                     document.getElementById('result-area').classList.remove('hidden');
                     status.innerText = "Questão gerada com sucesso!";
                 } else {
-                    status.innerText = "Erro: " + (data.error ? data.error.message : "Tente novamente.");
+                    status.innerText = "Erro na IA: " + (data.error ? data.error.message : "Tente novamente.");
                 }
             } catch (e) {
                 status.innerText = "Erro de conexão com a IA.";
-                console.error(e);
             } finally {
                 btn.disabled = false;
             }
         }
 
-        // 3. FUNÇÃO SALVAR (PLANILHA)
+        // 3. FUNÇÃO SALVAR
         async function salvarResultado() {
             const status = document.getElementById('status-msg');
             const btn = document.getElementById('btnSave');
-            status.innerText = "Salvando na planilha...";
+            status.innerText = "Salvando seu progresso...";
             btn.disabled = true;
 
             try {
                 await fetch(SCRIPT_URL, { 
                     method: 'POST', 
                     mode: 'no-cors', 
-                    body: JSON.stringify({ userEmail: loggedEmail, concurso: "Gerado por IA" }) 
+                    body: JSON.stringify({ 
+                        userEmail: loggedEmail, 
+                        concurso: document.getElementById('editalInput').value,
+                        resultado: "Estudado"
+                    }) 
                 });
-                status.innerText = "Desempenho salvo com sucesso!";
+                status.innerText = "Salvo com sucesso na aba 'questoes'!";
             } catch (e) {
                 status.innerText = "Erro ao salvar na planilha.";
             } finally {
@@ -150,5 +151,3 @@
     </script>
 </body>
 </html>
-
-
