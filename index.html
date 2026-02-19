@@ -45,13 +45,13 @@
     </div>
 
     <script>
-        // CONFIGURAÇÕES GERAIS
+        // 1. DADOS DE CONEXÃO
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdgjyDoV-d9ayAWjLnw3VgvLnT15AKdzIgxil-kHNerVEFOA3SsMhDOQA7iuAOJO5R/exec';
         const GEMINI_API_KEY = 'AIzaSyBLTDmAxgQ9XFmJIj570zCLGO68URXjVZE';
         
         let loggedEmail = "";
 
-        // 1. FUNÇÃO DE LOGIN
+        // 2. AUTENTICAÇÃO (Login na Planilha)
         async function autenticar() {
             const email = document.getElementById('emailField').value;
             const btn = document.getElementById('btnEnter');
@@ -72,23 +72,23 @@
                     btn.innerText = "Acessar Painel"; btn.disabled = false;
                 }
             } catch (e) {
-                alert("Erro na planilha. Verifique o link do script.");
+                alert("Erro ao conectar com a planilha.");
                 btn.innerText = "Acessar Painel"; btn.disabled = false;
             }
         }
 
-       // 2. FUNÇÃO DA IA (VERSÃO UNIVERSAL GEMINI-PRO)
+        // 3. GERAR QUESTÃO (IA UNIVERSAL - GEMINI PRO)
         async function gerarQuestaoIA() {
             const input = document.getElementById('editalInput').value;
             const status = document.getElementById('status-msg');
             const btn = document.getElementById('btnIA');
-            if(!input) return alert("Digite o concurso!");
+            if(!input) return alert("Digite o tema!");
 
             status.innerText = "IA Gerando Questão...";
             btn.disabled = true;
 
             try {
-                // Usando o modelo Pro que é aceito em todas as versões de API
+                // Rota v1beta com modelo Gemini-Pro (O mais compatível)
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
 
                 const response = await fetch(url, {
@@ -107,16 +107,17 @@
                     document.getElementById('result-area').classList.remove('hidden');
                     status.innerText = "Questão gerada com sucesso!";
                 } else {
-                    status.innerText = "Erro: " + (data.error ? data.error.message : "Modelo em manutenção. Tente novamente.");
+                    // Se der erro, mostraremos o que o Google diz exatamente
+                    status.innerText = "Erro do Google: " + (data.error ? data.error.message : "Tente novamente.");
                 }
             } catch (e) {
-                status.innerText = "Erro de conexão com o servidor da IA.";
+                status.innerText = "Erro de conexão com o servidor.";
             } finally {
                 btn.disabled = false;
             }
         }
 
-        // 3. FUNÇÃO PARA SALVAR NA PLANILHA
+        // 4. SALVAR RESULTADO
         async function salvarResultado() {
             try {
                 await fetch(SCRIPT_URL, { 
@@ -124,9 +125,9 @@
                     mode: 'no-cors', 
                     body: JSON.stringify({ userEmail: loggedEmail, concurso: "IA" }) 
                 });
-                document.getElementById('status-msg').innerText = "Desempenho salvo na sua planilha!";
+                document.getElementById('status-msg').innerText = "Desempenho salvo!";
             } catch (e) {
-                document.getElementById('status-msg').innerText = "Erro ao salvar resultado.";
+                document.getElementById('status-msg').innerText = "Erro ao salvar.";
             }
         }
     </script>
