@@ -46,10 +46,12 @@
 
     <script>
         // CONFIGURAÇÕES VINDAS DA ELAINE
-       
-       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyayYfXYKd-fJxPur8F6sWHTbobdSoFuSd3O__AXi5kX-ha6UJd7vxzNIZmbAZOk-gx/exec';
-        const GEMINI_API_KEY = 'AIzaSyBLTDmAxgQ9XFmJIj570zCLGO68URXjVZE';
-        
+       // CONFIGURAÇÕES GERAIS
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdgjyDoV-d9ayAWjLnw3VgvLnT15AKdzIgxil-kHNerVEFOA3SsMhDOQA7iuAOJO5R/exec';
+    const GEMINI_API_KEY = 'AIzaSyBLTDmAxgQ9XFmJIj570zCLGO68URXjVZE';
+
+    // A URL CORRETA (SEM O "BETA")
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         let loggedEmail = "";
 
         async function autenticar() {
@@ -130,6 +132,7 @@
     </script>
 </body>
 </html>
+
 
 
 
