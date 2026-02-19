@@ -73,7 +73,7 @@
             status.innerText = "IA Gerando Questão...";
             try {
                 // Atualizado para usar o modelo que aparece no seu print
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+                const url = 'const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -105,3 +105,4 @@
     </script>
 </body>
 </html>
+
