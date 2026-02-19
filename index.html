@@ -45,15 +45,13 @@
     </div>
 
     <script>
-        // CONFIGURAÇÕES VINDAS DA ELAINE
-       // CONFIGURAÇÕES GERAIS
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdgjyDoV-d9ayAWjLnw3VgvLnT15AKdzIgxil-kHNerVEFOA3SsMhDOQA7iuAOJO5R/exec';
-    const GEMINI_API_KEY = 'AIzaSyBLTDmAxgQ9XFmJIj570zCLGO68URXjVZE';
-
-    // A URL CORRETA (SEM O "BETA")
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // CONFIGURAÇÕES GERAIS
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdgjyDoV-d9ayAWjLnw3VgvLnT15AKdzIgxil-kHNerVEFOA3SsMhDOQA7iuAOJO5R/exec';
+        const GEMINI_API_KEY = 'AIzaSyBLTDmAxgQ9XFmJIj570zCLGO68URXjVZE';
+        
         let loggedEmail = "";
 
+        // 1. FUNÇÃO DE LOGIN
         async function autenticar() {
             const email = document.getElementById('emailField').value;
             const btn = document.getElementById('btnEnter');
@@ -79,19 +77,7 @@
             }
         }
 
-        async function chamarIA(modelo, prompt) {
-            // Rota v1beta que é a compatível com Gemini 3 Preview
-           const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: "Mentor de concursos. Gere uma questão inédita sobre: " + prompt }] }]
-                })
-            });
-            return await response.json();
-        }
-
+        // 2. FUNÇÃO DA IA (REVISADA E SEM v1beta)
         async function gerarQuestaoIA() {
             const input = document.getElementById('editalInput').value;
             const status = document.getElementById('status-msg');
@@ -102,37 +88,50 @@
             btn.disabled = true;
 
             try {
-                // Tenta o modelo padrão do seu painel
-                let data = await chamarIA("gemini-1.5-flash", input);
-                
-                // Se der erro de "not found", tenta o pro
-                if (data.error) {
-                    data = await chamarIA("gemini-pro", input);
-                }
+                // Rota v1 estável com gemini-1.5-flash
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-                if(data.candidates) {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: "Atue como mentor de concursos. Gere uma questão inédita de múltipla escolha sobre: " + input }] }]
+                    })
+                });
+                
+                const data = await response.json();
+
+                if(data.candidates && data.candidates[0].content) {
                     const textoIA = data.candidates[0].content.parts[0].text;
                     document.getElementById('content-questao').innerHTML = textoIA.replace(/\n/g, '<br>');
                     document.getElementById('result-area').classList.remove('hidden');
-                    status.innerText = "Sucesso!";
+                    status.innerText = "Questão gerada com sucesso!";
                 } else {
-                    status.innerText = "Erro: " + (data.error ? data.error.message : "Tente novamente.");
+                    status.innerText = "Erro: " + (data.error ? data.error.message : "Verifique sua chave ou modelo.");
                 }
             } catch (e) {
-                status.innerText = "Erro de conexão.";
+                status.innerText = "Erro de conexão com o servidor da IA.";
             } finally {
                 btn.disabled = false;
             }
         }
 
+        // 3. FUNÇÃO PARA SALVAR NA PLANILHA
         async function salvarResultado() {
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ userEmail: loggedEmail, concurso: "IA" }) });
-            document.getElementById('status-msg').innerText = "Desempenho salvo!";
+            try {
+                await fetch(SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    body: JSON.stringify({ userEmail: loggedEmail, concurso: "IA" }) 
+                });
+                document.getElementById('status-msg').innerText = "Desempenho salvo na sua planilha!";
+            } catch (e) {
+                document.getElementById('status-msg').innerText = "Erro ao salvar resultado.";
+            }
         }
     </script>
 </body>
 </html>
-
 
 
 
