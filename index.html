@@ -81,96 +81,77 @@
       }
     }
 
-    async function gerarDuasQuestoes() {
-    const infoConcurso = document.getElementById('editalInput').value.trim();
+   // --- FUNÇÃO PARA GERAR (ID: btnGerar) ---
+async function gerarDuasQuestoes() {
+    const infoConcurso = document.getElementById('editalInput').value;
     const status = document.getElementById('status-msg');
-    const btnGerar = document.getElementById('btnGerar');
-    const contentArea = document.getElementById('content-questao');
-    const resultArea = document.getElementById('result-area');
+    const btn = document.getElementById('btnGerar'); // USANDO SEU ID DO HTML
     
-    if (!infoConcurso) return alert("Por favor, informe o cargo/banca/edital.");
+    if(!infoConcurso) return alert("Por favor, informe os dados!");
 
-    status.innerText = "Gerando questões com IA... aguarde.";
-    btnGerar.disabled = true;
+    status.innerText = "Solicitando questões ao servidor seguro...";
+    btn.disabled = true;
 
     try {
-        // CONEXÃO DIRETA COM O GEMINI (Muito mais rápido que pela planilha)
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-        
-        const prompt = `Atue como professor especialista em concursos. 
-        Com base no cargo/banca: ${infoConcurso}, forneça EXATAMENTE 02 questões de múltipla escolha (A a E):
-        
-        1. UMA QUESTÃO REAL: Identifique como "✅ QUESTÃO REAL".
-        2. UMA QUESTÃO INÉDITA: Identifique como "🆕 QUESTÃO INÉDITA".
-        
-        Apresente Gabarito e um COMENTÁRIO DIDÁTICO detalhado para cada uma.`;
-
-        const response = await fetch(url, {
+        const response = await fetch(SCRIPT_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            body: JSON.stringify({
+                action: 'generate', // O Apps Script vai ler isso e usar a chave lá
+                email: loggedEmail,
+                tema: infoConcurso
+            })
         });
 
         const data = await response.json();
-        
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
-            const textoIA = data.candidates[0].content.parts[0].text;
-            contentArea.innerHTML = textoIA.replace(/\n/g, '<br>');
-            resultArea.classList.remove('hidden');
+
+        if (data.ok) {
+            document.getElementById('content-questao').innerHTML = data.texto.replace(/\n/g, '<br>');
+            document.getElementById('result-area').classList.remove('hidden');
             status.innerText = "Simulado pronto!";
         } else {
-            status.innerText = "A IA não retornou dados. Verifique sua chave API.";
+            status.innerText = "Erro: " + data.error;
         }
-
     } catch (e) {
-        console.error("Erro na IA:", e);
-        status.innerText = "Erro ao conectar com a IA.";
+        status.innerText = "Erro de conexão. Verifique se o Script está publicado.";
     } finally {
-        btnGerar.disabled = false;
+        btn.disabled = false;
     }
 }
-    async function salvarResultado() {
-      const status = document.getElementById('status-msg');
-      const btnSalvar = document.getElementById('btnSalvar');
-      const conteudoIA = document.getElementById('content-questao').innerText;
-      const infoDigitada = document.getElementById('editalInput').value.trim();
 
-      if (!conteudoIA) return alert("Nada para salvar. Gere as questões primeiro.");
+// --- FUNÇÃO PARA SALVAR (ID: btnSalvar) ---
+async function salvarResultado() {
+    const status = document.getElementById('status-msg');
+    const btnSave = document.getElementById('btnSalvar'); // USANDO SEU ID DO HTML
+    const conteudoIA = document.getElementById('content-questao').innerText;
+    const infoDigitada = document.getElementById('editalInput').value;
+    
+    status.innerText = "Salvando na planilha...";
+    btnSave.disabled = true;
 
-      status.innerText = "Salvando...";
-      btnSalvar.disabled = true;
-
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'save',
-            email: loggedEmail,
-            concurso: infoDigitada,
-            banca: "Ver no Conteúdo",
-            materia: "Geral/Edital",
-            resultado: conteudoIA,
-            respostaAluno: "",
-            gabarito: "",
-            statusResultado: ""
-          })
+    try {
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            body: JSON.stringify({
+                action: 'save',
+                email: loggedEmail,
+                concurso: infoDigitada,
+                banca: "Ver no Conteúdo",
+                materia: "Geral",
+                resultado: conteudoIA
+            })
         });
 
-        const data = await response.json();
-        if (data.ok) {
-          status.innerText = "Salvo.";
-          alert("✅ Salvo com sucesso!");
-        } else {
-          status.innerText = "Erro: " + (data.error || "Falha ao salvar.");
-        }
-      } catch (e) {
-        console.error(e);
+        alert("✅ Salvo com sucesso na sua planilha!");
+        status.innerText = "Dados registrados!";
+    } catch (e) {
         status.innerText = "Erro ao salvar.";
-      } finally {
-        btnSalvar.disabled = false;
-      }
+    } finally {
+        btnSave.disabled = false;
     }
+}
   </script>
 </body>
 </html>
+
 
