@@ -16,6 +16,7 @@
     .ia-box { background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; text-align: left; margin-top: 15px; border-left: 4px solid var(--primary); line-height: 1.6; word-break: break-word; }
     .row { display: flex; gap: 10px; margin-top: 10px; }
     .row button { width: 50%; margin-top: 0; }
+    .small { font-size: 0.85rem; opacity: 0.9; }
   </style>
 </head>
 <body>
@@ -25,7 +26,7 @@
     <p>Olá! Valide seu acesso para entrar.</p>
     <input type="email" id="emailField" placeholder="Seu e-mail cadastrado" />
     <button id="btnEnter" onclick="autenticar()">Acessar Painel</button>
-    <p id="login-status" style="font-size: 0.85rem; margin-top: 10px;"></p>
+    <p id="login-status" class="small" style="margin-top: 10px;"></p>
   </div>
 
   <div id="app-screen" class="container hidden">
@@ -48,10 +49,11 @@
       </div>
     </div>
 
-    <p id="status-msg" style="margin-top: 15px; font-size: 0.85rem;"></p>
+    <p id="status-msg" class="small" style="margin-top: 15px;"></p>
   </div>
 
   <script>
+    // IMPORTANTE: confira se este é o URL do Web App publicado (Implantar -> Gerenciar implantações)
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZ8TMb9TGK9kMH5zdjCIsI6jWQbXsmLw0QcYfrcMh-ZBeknrCxYL-Hbq9jnDPbgWYE/exec';
 
     let loggedEmail = "";
@@ -59,13 +61,17 @@
     async function autenticar() {
       const email = document.getElementById('emailField').value.trim();
       const status = document.getElementById('login-status');
-      if (!email) return alert("Digite seu e-mail.");
 
+      if (!email) return alert("Digite seu e-mail.");
       status.innerText = "Verificando...";
 
       try {
         const resp = await fetch(`${SCRIPT_URL}?email=${encodeURIComponent(email)}&t=${Date.now()}`);
-        const data = await resp.json();
+        const raw = await resp.text();
+
+        let data;
+        try { data = JSON.parse(raw); }
+        catch { throw new Error("Resposta não-JSON do servidor: " + raw); }
 
         if (data.autorizado) {
           loggedEmail = email;
@@ -77,82 +83,103 @@
           status.innerText = "E-mail não autorizado.";
         }
       } catch (e) {
-        status.innerText = "Erro de conexão com o servidor.";
+        console.error(e);
+        status.innerText = "Erro: " + (e?.message || e);
       }
     }
 
-   // --- FUNÇÃO PARA GERAR (ID: btnGerar) ---
-async function gerarDuasQuestoes() {
-    const infoConcurso = document.getElementById('editalInput').value;
-    const status = document.getElementById('status-msg');
-    const btn = document.getElementById('btnGerar'); // USANDO SEU ID DO HTML
-    
-    if(!infoConcurso) return alert("Por favor, informe os dados!");
+    // --- FUNÇÃO PARA GERAR (ID: btnGerar) ---
+    async function gerarDuasQuestoes() {
+      const infoConcurso = document.getElementById('editalInput').value.trim();
+      const status = document.getElementById('status-msg');
+      const btnGerar = document.getElementById('btnGerar');
+      const btnGerarMais = document.getElementById('btnGerarMais');
 
-    status.innerText = "Solicitando questões ao servidor seguro...";
-    btn.disabled = true;
+      if (!infoConcurso) return alert("Por favor, informe os dados!");
 
-    try {
+      status.innerText = "Solicitando questões ao servidor...";
+      btnGerar.disabled = true;
+      if (btnGerarMais) btnGerarMais.disabled = true;
+
+      try {
         const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                action: 'generate', // O Apps Script vai ler isso e usar a chave lá
-                email: loggedEmail,
-                tema: infoConcurso
-            })
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'generate',
+            email: loggedEmail,
+            tema: infoConcurso
+          })
         });
 
-        const data = await response.json();
+        const raw = await response.text(); // pega mesmo se der erro/HTML
+
+        let data;
+        try { data = JSON.parse(raw); }
+        catch { throw new Error("Resposta não-JSON do servidor: " + raw); }
+
+        if (data.ok && data.texto) {
+          document.getElementById('content-questao').innerHTML = String(data.texto).replace(/\n/g, '<br>');
+          document.getElementById('result-area').classList.remove('hidden');
+          status.innerText = "Simulado pronto!";
+        } else {
+          status.innerText = "Erro: " + (data.error || raw);
+        }
+      } catch (e) {
+        console.error(e);
+        status.innerText = "Erro: " + (e?.message || e);
+      } finally {
+        btnGerar.disabled = false;
+        if (btnGerarMais) btnGerarMais.disabled = false;
+      }
+    }
+
+    // --- FUNÇÃO PARA SALVAR (ID: btnSalvar) ---
+    async function salvarResultado() {
+      const status = document.getElementById('status-msg');
+      const btnSave = document.getElementById('btnSalvar');
+      const conteudoIA = document.getElementById('content-questao').innerText;
+      const infoDigitada = document.getElementById('editalInput').value.trim();
+
+      if (!conteudoIA) return alert("Nada para salvar. Gere as questões primeiro.");
+
+      status.innerText = "Salvando na planilha...";
+      btnSave.disabled = true;
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'save',
+            email: loggedEmail,
+            concurso: infoDigitada,
+            banca: "Ver no Conteúdo",
+            materia: "Geral",
+            resultado: conteudoIA,
+            respostaAluno: "",
+            gabarito: "",
+            statusResultado: ""
+          })
+        });
+
+        const raw = await response.text();
+
+        let data;
+        try { data = JSON.parse(raw); }
+        catch { throw new Error("Resposta não-JSON do servidor: " + raw); }
 
         if (data.ok) {
-            document.getElementById('content-questao').innerHTML = data.texto.replace(/\n/g, '<br>');
-            document.getElementById('result-area').classList.remove('hidden');
-            status.innerText = "Simulado pronto!";
+          alert("✅ Salvo com sucesso na sua planilha!");
+          status.innerText = "Dados registrados!";
         } else {
-            status.innerText = "Erro: " + data.error;
+          status.innerText = "Erro ao salvar: " + (data.error || raw);
         }
-    } catch (e) {
-        status.innerText = "Erro de conexão. Verifique se o Script está publicado.";
-    } finally {
-        btn.disabled = false;
-    }
-}
-
-// --- FUNÇÃO PARA SALVAR (ID: btnSalvar) ---
-async function salvarResultado() {
-    const status = document.getElementById('status-msg');
-    const btnSave = document.getElementById('btnSalvar'); // USANDO SEU ID DO HTML
-    const conteudoIA = document.getElementById('content-questao').innerText;
-    const infoDigitada = document.getElementById('editalInput').value;
-    
-    status.innerText = "Salvando na planilha...";
-    btnSave.disabled = true;
-
-    try {
-        await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors', 
-            body: JSON.stringify({
-                action: 'save',
-                email: loggedEmail,
-                concurso: infoDigitada,
-                banca: "Ver no Conteúdo",
-                materia: "Geral",
-                resultado: conteudoIA
-            })
-        });
-
-        alert("✅ Salvo com sucesso na sua planilha!");
-        status.innerText = "Dados registrados!";
-    } catch (e) {
-        status.innerText = "Erro ao salvar.";
-    } finally {
+      } catch (e) {
+        console.error(e);
+        status.innerText = "Erro: " + (e?.message || e);
+      } finally {
         btnSave.disabled = false;
+      }
     }
-}
   </script>
 </body>
 </html>
-
-
-
