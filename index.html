@@ -46,7 +46,7 @@
 
   <script>
     // Seu Apps Script (já existente)
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKfMksPZlUu831nqVZcEZlTOCJXy_Vy9hkmKTa4kS_guj_UiCYwHeDwzYls6KRSfYG/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6OPV36alYqIebMzoSWP9SA4vweZJd9pUa1Fb_RuPw1my7wu8pXppL1BfkNWUJgb-_/exec';
 
     let loggedEmail = "";
 
@@ -144,15 +144,15 @@ async function salvarResultado() {
         await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors', 
-            body: JSON.stringify({
-                action: 'save',
-                userEmail: loggedEmail,   // Vai para 'email' no script
-                concurso: infoDigitada,   // Vai para 'res.concurso' (Coluna C)
-                banca: "Ver no Conteúdo", // Vai para 'res.banca' (Coluna D)
-                materia: "Geral/Edital",  // Vai para 'res.materia' (Coluna E)
-                resultado: conteudoIA,    // Vai para 'res.resultado' (Coluna F)
-                // Os campos G, H e I o Script já entende como vazios "" na V1.2
-            })
+           body: JSON.stringify({
+          action: 'save',
+          email: loggedEmail,       // Use 'email' para bater com o String(res.email) do seu script
+          userEmail: loggedEmail,   // Mantenha este por segurança
+          concurso: infoDigitada,
+          banca: "Ver no Conteúdo",
+          materia: "Geral/Edital",
+          resultado: conteudoIA
+      })
         });
 
         alert("✅ Desempenho salvo com sucesso!");
@@ -171,6 +171,7 @@ async function salvarResultado() {
   </script>
 </body>
 </html>
+
 
 
 
