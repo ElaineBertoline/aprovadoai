@@ -7,13 +7,15 @@
   <style>
     :root { --primary: #00f2fe; --secondary: #4facfe; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
     body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .container { background: var(--card); padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+    .container { background: var(--card); padding: 25px; border-radius: 15px; width: 90%; max-width: 520px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
     .hidden { display: none; }
     textarea, input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 1rem; outline: none; }
     button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: linear-gradient(90deg, var(--primary), var(--secondary)); color: #0f172a; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
     button:hover { opacity: 0.9; transform: scale(1.02); }
     button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-    .ia-box { background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; text-align: left; margin-top: 15px; border-left: 4px solid var(--primary); line-height: 1.6; }
+    .ia-box { background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; text-align: left; margin-top: 15px; border-left: 4px solid var(--primary); line-height: 1.6; word-break: break-word; }
+    .row { display: flex; gap: 10px; margin-top: 10px; }
+    .row button { width: 50%; margin-top: 0; }
   </style>
 </head>
 <body>
@@ -23,37 +25,40 @@
     <p>Olá! Valide seu acesso para entrar.</p>
     <input type="email" id="emailField" placeholder="Seu e-mail cadastrado" />
     <button id="btnEnter" onclick="autenticar()">Acessar Painel</button>
-    <p id="login-status" style="font-size: 0.8rem; margin-top: 10px;"></p>
+    <p id="login-status" style="font-size: 0.85rem; margin-top: 10px;"></p>
   </div>
 
   <div id="app-screen" class="container hidden">
-    <h2>Painel do Aluno 🚀</h2>
+    <h2>Painel do Aluno</h2>
     <p>Logado como: <span id="user-display" style="color:var(--primary); font-weight: bold;"></span></p>
 
     <div class="ia-box">
-      <textarea id="editalInput" rows="3" 
-    placeholder="Instrução: Informe os dados para análise.&#10;Ex: Analista de Sistemas - FAPESP / 2026 - Vunesp"></textarea>
-      <button id="btnIA" onclick="gerarQuestaoIA()">Gerar Questão com IA</button>
+      <textarea id="editalInput" rows="3"
+        placeholder="Informe os dados do edital/cargo/banca.&#10;Ex: Analista de Sistemas - FAPESP / 2026 - Vunesp"></textarea>
+
+      <button id="btnGerar" onclick="gerarDuasQuestoes()">🚀 Gerar 02 Questões</button>
     </div>
 
     <div id="result-area" class="hidden">
       <div class="ia-box" id="content-questao"></div>
-     <button id="btnIA" onclick="gerarDuasQuestoes()">🚀 Gerar 02 Questões Comentadas</button>
+
+      <div class="row">
+        <button id="btnSalvar" onclick="salvarResultado()">💾 Salvar</button>
+        <button id="btnGerarMais" onclick="gerarDuasQuestoes()">🔁 Gerar Mais 02</button>
+      </div>
     </div>
 
-    <p id="status-msg" style="margin-top: 15px; font-size: 0.8rem;"></p>
+    <p id="status-msg" style="margin-top: 15px; font-size: 0.85rem;"></p>
   </div>
 
   <script>
-    // Seu Apps Script (já existente)
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6OPV36alYqIebMzoSWP9SA4vweZJd9pUa1Fb_RuPw1my7wu8pXppL1BfkNWUJgb-_/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwRyKfU4RvBgTpWFzthxdkqxtJHh9KMQdE5hDAiyZZiHuG_sfH7PDhIOuf9gorO5WQu/exec';
 
     let loggedEmail = "";
 
     async function autenticar() {
       const email = document.getElementById('emailField').value.trim();
       const status = document.getElementById('login-status');
-
       if (!email) return alert("Digite seu e-mail.");
 
       status.innerText = "Verificando...";
@@ -76,99 +81,90 @@
       }
     }
 
- // 1. FUNÇÃO PARA GERAR (Agora com destravamento de botão)
-async function gerarDuasQuestoes() {
-    const infoConcurso = document.getElementById('editalInput').value;
-    const status = document.getElementById('status-msg');
-    const btn = document.getElementById('btnIA');
-    const contentArea = document.getElementById('content-questao');
-    const resultArea = document.getElementById('result-area');
-    
-    if(!infoConcurso) return alert("Por favor, informe o cargo e a banca!");
+    async function gerarDuasQuestoes() {
+      const infoConcurso = document.getElementById('editalInput').value.trim();
+      const status = document.getElementById('status-msg');
+      const btnGerar = document.getElementById('btnGerar');
+      const btnGerarMais = document.getElementById('btnGerarMais');
+      const contentArea = document.getElementById('content-questao');
+      const resultArea = document.getElementById('result-area');
 
-    // 1. Prepara a interface
-    status.innerText = "IA localizando questões... Aguarde.";
-    btn.disabled = true;
-    btn.innerText = "⏳ Gerando...";
-    
-    try {
-        // Certifique-se de que a variável GEMINI_API_KEY está definida no topo do seu script
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-        
-        const prompt = `Atue como professor especialista. Com base em: ${infoConcurso}, gere EXATAMENTE 02 questões de múltipla escolha (A-E) com gabarito e comentário. Uma REAL e uma INÉDITA.`;
+      if (!infoConcurso) return alert("Por favor, informe o cargo/banca/edital.");
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      status.innerText = "Gerando questões... aguarde.";
+      btnGerar.disabled = true;
+      if (btnGerarMais) btnGerarMais.disabled = true;
+
+      try {
+        // Sem headers para evitar preflight/CORS
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'generate',
+            email: loggedEmail,
+            tema: infoConcurso
+          })
         });
 
         const data = await response.json();
 
-        // Verifica se a IA respondeu corretamente
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
-            const textoIA = data.candidates[0].content.parts[0].text;
-            
-            // Exibe o resultado
-            contentArea.innerHTML = textoIA.replace(/\n/g, '<br>');
-            resultArea.classList.remove('hidden'); // Remove o "hidden" para mostrar a div
-            status.innerText = "Simulado pronto!";
+        if (data.ok && data.texto) {
+          contentArea.innerHTML = String(data.texto).replace(/\n/g, '<br>');
+          resultArea.classList.remove('hidden');
+          status.innerText = "Pronto.";
         } else {
-            status.innerText = "A IA não retornou dados. Verifique sua cota ou chave.";
+          status.innerText = "Erro: " + (data.error || "A IA não retornou dados.");
         }
-        
-    } catch (e) {
-        console.error("Erro na IA:", e);
-        status.innerText = "Erro de conexão com a IA.";
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "🚀 Gerar Próximas 02 Questões";
+      } catch (e) {
+        console.error(e);
+        status.innerText = "Erro de conexão com o servidor.";
+      } finally {
+        btnGerar.disabled = false;
+        if (btnGerarMais) btnGerarMais.disabled = false;
+      }
     }
-}
-async function salvarResultado() {
-    const status = document.getElementById('status-msg');
-    const btnIA = document.getElementById('btnIA');
-    const conteudoIA = document.getElementById('content-questao').innerText;
-    const infoDigitada = document.getElementById('editalInput').value;
-    
-    status.innerText = "Salvando...";
-    btnIA.disabled = true; // Trava o botão enquanto salva
 
-    try {
-        await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors', 
-           body: JSON.stringify({
-          action: 'save',
-          email: loggedEmail,       // Use 'email' para bater com o String(res.email) do seu script
-          userEmail: loggedEmail,   // Mantenha este por segurança
-          concurso: infoDigitada,
-          banca: "Ver no Conteúdo",
-          materia: "Geral/Edital",
-          resultado: conteudoIA
-      })
+    async function salvarResultado() {
+      const status = document.getElementById('status-msg');
+      const btnSalvar = document.getElementById('btnSalvar');
+      const conteudoIA = document.getElementById('content-questao').innerText;
+      const infoDigitada = document.getElementById('editalInput').value.trim();
+
+      if (!conteudoIA) return alert("Nada para salvar. Gere as questões primeiro.");
+
+      status.innerText = "Salvando...";
+      btnSalvar.disabled = true;
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'save',
+            email: loggedEmail,
+            concurso: infoDigitada,
+            banca: "Ver no Conteúdo",
+            materia: "Geral/Edital",
+            resultado: conteudoIA,
+            respostaAluno: "",
+            gabarito: "",
+            statusResultado: ""
+          })
         });
 
-        alert("✅ Desempenho salvo com sucesso!");
-        status.innerText = "Dados salvos!";
-        
-        // REATIVA O BOTÃO PARA GERAR NOVAS
-        btnIA.disabled = false;
-        btnIA.innerText = "🚀 Gerar Próximas 02 Questões";
-
-    } catch (e) {
-        status.innerText = "Erro ao salvar.";
-        btnIA.disabled = false;
+        const data = await response.json();
+        if (data.ok) {
+          status.innerText = "Salvo.";
+          alert("✅ Salvo com sucesso!");
+        } else {
+          status.innerText = "Erro: " + (data.error || "Falha ao salvar.");
+        }
+      } catch (e) {
         console.error(e);
+        status.innerText = "Erro ao salvar.";
+      } finally {
+        btnSalvar.disabled = false;
+      }
     }
-}
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
