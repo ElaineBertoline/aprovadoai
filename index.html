@@ -38,7 +38,7 @@
 
     <div id="result-area" class="hidden">
       <div class="ia-box" id="content-questao"></div>
-      <button onclick="salvarResultado()">Salvar meu Desempenho</button>
+     <button id="btnIA" onclick="gerarDuasQuestoes()">🚀 Gerar 02 Questões Comentadas</button>
     </div>
 
     <p id="status-msg" style="margin-top: 15px; font-size: 0.8rem;"></p>
@@ -46,7 +46,7 @@
 
   <script>
     // Seu Apps Script (já existente)
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzOvkcAY5vrNnxEz0OJV5OZBDQkSGLuqvhmDOB1NnwU4EyEreCaL4t3ojo06ndz0lg/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKfMksPZlUu831nqVZcEZlTOCJXy_Vy9hkmKTa4kS_guj_UiCYwHeDwzYls6KRSfYG/exec';
 
     let loggedEmail = "";
 
@@ -81,18 +81,30 @@ async function gerarDuasQuestoes() {
     const infoConcurso = document.getElementById('editalInput').value;
     const status = document.getElementById('status-msg');
     const btn = document.getElementById('btnIA');
+    const contentArea = document.getElementById('content-questao');
+    const resultArea = document.getElementById('result-area');
     
-    if(!infoConcurso) return alert("Por favor, informe o cargo e a banca!");
+    if(!infoConcurso) return alert("Por favor, preencha os dados do concurso!");
 
-    status.innerText = "IA pesquisando questões reais e inéditas...";
-    btn.disabled = true; // Trava para evitar cliques duplos
+    // 1. Prepara a tela
+    status.innerText = "IA localizando questões reais e criando inéditas...";
+    btn.disabled = true;
+    contentArea.innerHTML = ""; // Limpa a questão anterior
+    resultArea.classList.add('hidden'); // Esconde a área de resultado até carregar
     
     try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
-        const prompt = `Atue como professor de concursos. Com base em: ${infoConcurso}, gere EXATAMENTE 02 questões (A-E) com comentários. 
-        Uma deve ser REAL (cite o concurso anterior) e a outra INÉDITA. 
-        Destaque o Gabarito e use negrito.`;
+        const prompt = `Atue como professor especialista em concursos para o cargo: ${infoConcurso}.
+        Forneça EXATAMENTE 02 questões de múltipla escolha (A a E):
+        
+        1. UMA QUESTÃO REAL: Pesquise uma questão de concursos anteriores para este cargo/banca. Identifique: "✅ QUESTÃO REAL - Concurso: [Nome] | Banca: [Nome]".
+        2. UMA QUESTÃO INÉDITA: Crie uma questão nova baseada no edital. Identifique: "🆕 QUESTÃO INÉDITA - Criada por IA".
+        
+        REGRAS:
+        - Apresente o Gabarito e um COMENTÁRIO DIDÁTICO detalhado para cada uma.
+        - Se for tema recorrente, avise: "⚠️ Padrão Frequente desta Banca!".
+        - Use negrito para os títulos.`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -101,58 +113,65 @@ async function gerarDuasQuestoes() {
         });
 
         const data = await response.json();
-        const textoIA = data.candidates[0].content.parts[0].text;
-
-        document.getElementById('content-questao').innerHTML = textoIA.replace(/\n/g, '<br>');
-        document.getElementById('result-area').classList.remove('hidden');
-        status.innerText = "Questões geradas!";
+        
+        if (data.candidates && data.candidates[0].content.parts[0].text) {
+            const textoIA = data.candidates[0].content.parts[0].text;
+            contentArea.innerHTML = textoIA.replace(/\n/g, '<br>');
+            resultArea.classList.remove('hidden');
+            status.innerText = "Simulado pronto!";
+        } else {
+            throw new Error("Resposta da IA vazia");
+        }
         
     } catch (e) {
-        status.innerText = "Erro ao gerar. Tente novamente.";
-        btn.disabled = false; // Destrava se der erro
+        status.innerText = "Erro ao gerar. Verifique sua API KEY ou conexão.";
+        console.error("Erro detalhado:", e);
     } finally {
-        btn.disabled = false; // Garante que o botão volte a funcionar
+        btn.disabled = false;
+        btn.innerText = "🚀 Gerar Próximas 02 Questões";
     }
 }
-
 async function salvarResultado() {
-  const status = document.getElementById('status-msg');
-  const btnIA = document.getElementById('btnIA');
-  const conteudoIA = document.getElementById('content-questao').innerText; // Pega o texto das questões
-  const infoDigitada = document.getElementById('editalInput').value; // Pega o que você digitou no campo
-  
-  status.innerText = "Salvando na planilha...";
-
-  try {
-    const response = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'save',
-        userEmail: loggedEmail,    // Coluna B
-        concurso: infoDigitada,    // Coluna C (Agora salva o texto real!)
-        banca: "Ver no Conteúdo",  // Coluna D (A IA já escreveu no texto)
-        materia: "Geral / Edital", // Coluna E
-        resultado: conteudoIA      // Coluna F (O texto das questões)
-      })
-    });
-
-    // Como usamos mode: 'no-cors' às vezes o JSON não volta, 
-    // então confirmamos com um alert e mudamos o botão
-    alert("✅ Desempenho salvo com sucesso!");
-    status.innerText = "Salvo com sucesso!";
+    const status = document.getElementById('status-msg');
+    const btnIA = document.getElementById('btnIA');
+    const conteudoIA = document.getElementById('content-questao').innerText;
+    const infoDigitada = document.getElementById('editalInput').value;
     
-    // Habilita o botão para gerar novas questões sem apagar a tela
-    btnIA.disabled = false;
-    btnIA.innerText = "🚀 Gerar Próximas 02 Questões";
+    status.innerText = "Salvando...";
+    btnIA.disabled = true; // Trava o botão enquanto salva
 
-  } catch (e) {
-    console.error("Erro ao salvar:", e);
-    status.innerText = "Erro ao salvar. Verifique a conexão.";
-  }
+    try {
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            body: JSON.stringify({
+                action: 'save',
+                userEmail: loggedEmail,   // Vai para 'email' no script
+                concurso: infoDigitada,   // Vai para 'res.concurso' (Coluna C)
+                banca: "Ver no Conteúdo", // Vai para 'res.banca' (Coluna D)
+                materia: "Geral/Edital",  // Vai para 'res.materia' (Coluna E)
+                resultado: conteudoIA,    // Vai para 'res.resultado' (Coluna F)
+                // Os campos G, H e I o Script já entende como vazios "" na V1.2
+            })
+        });
+
+        alert("✅ Desempenho salvo com sucesso!");
+        status.innerText = "Dados salvos!";
+        
+        // REATIVA O BOTÃO PARA GERAR NOVAS
+        btnIA.disabled = false;
+        btnIA.innerText = "🚀 Gerar Próximas 02 Questões";
+
+    } catch (e) {
+        status.innerText = "Erro ao salvar.";
+        btnIA.disabled = false;
+        console.error(e);
+    }
 }
   </script>
 </body>
 </html>
+
 
 
 
