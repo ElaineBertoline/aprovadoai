@@ -41,6 +41,7 @@
     </div>
 
     <div id="result-area" class="hidden">
+      <div class="ia-box" id="info-questao"></div>
       <div class="ia-box" id="content-questao"></div>
 
       <div class="row">
@@ -89,49 +90,72 @@
     }
 
     // --- FUNÇÃO PARA GERAR (ID: btnGerar) ---
-    async function gerarDuasQuestoes() {
-      const infoConcurso = document.getElementById('editalInput').value.trim();
-      const status = document.getElementById('status-msg');
-      const btnGerar = document.getElementById('btnGerar');
-      const btnGerarMais = document.getElementById('btnGerarMais');
+async function gerarDuasQuestoes() {
+  const infoConcurso = document.getElementById('editalInput').value.trim();
+  const status = document.getElementById('status-msg');
+  const btnGerar = document.getElementById('btnGerar');
+  const btnGerarMais = document.getElementById('btnGerarMais');
 
-      if (!infoConcurso) return alert("Por favor, informe os dados!");
+  if (!infoConcurso) return alert("Por favor, informe os dados!");
 
-      status.innerText = "Solicitando questões ao servidor...";
-      btnGerar.disabled = true;
-      if (btnGerarMais) btnGerarMais.disabled = true;
+  status.innerText = "Solicitando questões ao servidor...";
+  btnGerar.disabled = true;
+  if (btnGerarMais) btnGerarMais.disabled = true;
 
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'generate',
-            email: loggedEmail,
-            tema: infoConcurso
-          })
-        });
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'generate',
+        email: loggedEmail,
+        tema: infoConcurso
+      })
+    });
 
-        const raw = await response.text(); // pega mesmo se der erro/HTML
+    const raw = await response.text();
 
-        let data;
-        try { data = JSON.parse(raw); }
-        catch { throw new Error("Resposta não-JSON do servidor: " + raw); }
-
-        if (data.ok && data.texto) {
-          document.getElementById('content-questao').innerHTML = String(data.texto).replace(/\n/g, '<br>');
-          document.getElementById('result-area').classList.remove('hidden');
-          status.innerText = "Simulado pronto!";
-        } else {
-          status.innerText = "Erro: " + (data.error || raw);
-        }
-      } catch (e) {
-        console.error(e);
-        status.innerText = "Erro: " + (e?.message || e);
-      } finally {
-        btnGerar.disabled = false;
-        if (btnGerarMais) btnGerarMais.disabled = false;
-      }
+    let data;
+    try { 
+      data = JSON.parse(raw); 
+    } catch {
+      throw new Error("Resposta não-JSON do servidor: " + raw);
     }
+
+    if (data.ok && data.texto) {
+
+      // ====== BLOCO DE INFORMAÇÕES DA QUESTÃO ======
+      const partes = infoConcurso.split('-').map(p => p.trim());
+
+      const concurso = partes[0] || infoConcurso;
+      const banca = partes[1] || "Não informada";
+      const disciplina = partes[2] || "Geral";
+
+      document.getElementById('info-questao').innerHTML = `
+        <b>Concurso / Cargo:</b> ${concurso}<br>
+        <b>Banca:</b> ${banca}<br>
+        <b>Disciplina:</b> ${disciplina}
+      `;
+      // ============================================
+
+      // ====== CONTEÚDO DAS QUESTÕES ======
+      document.getElementById('content-questao').innerHTML =
+        String(data.texto).replace(/\n/g, '<br>');
+
+      document.getElementById('result-area').classList.remove('hidden');
+      status.innerText = "Simulado pronto!";
+
+    } else {
+      status.innerText = "Erro: " + (data.error || raw);
+    }
+
+  } catch (e) {
+    console.error(e);
+    status.innerText = "Erro: " + (e?.message || e);
+  } finally {
+    btnGerar.disabled = false;
+    if (btnGerarMais) btnGerarMais.disabled = false;
+  }
+}
 
     // --- FUNÇÃO PARA SALVAR (ID: btnSalvar) ---
     async function salvarResultado() {
@@ -183,3 +207,4 @@
   </script>
 </body>
 </html>
+
