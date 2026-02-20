@@ -84,27 +84,18 @@ async function gerarDuasQuestoes() {
     const contentArea = document.getElementById('content-questao');
     const resultArea = document.getElementById('result-area');
     
-    if(!infoConcurso) return alert("Por favor, preencha os dados do concurso!");
+    if(!infoConcurso) return alert("Por favor, informe o cargo e a banca!");
 
-    // 1. Prepara a tela
-    status.innerText = "IA localizando questões reais e criando inéditas...";
+    // 1. Prepara a interface
+    status.innerText = "IA localizando questões... Aguarde.";
     btn.disabled = true;
-    contentArea.innerHTML = ""; // Limpa a questão anterior
-    resultArea.classList.add('hidden'); // Esconde a área de resultado até carregar
+    btn.innerText = "⏳ Gerando...";
     
     try {
+        // Certifique-se de que a variável GEMINI_API_KEY está definida no topo do seu script
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
-        const prompt = `Atue como professor especialista em concursos para o cargo: ${infoConcurso}.
-        Forneça EXATAMENTE 02 questões de múltipla escolha (A a E):
-        
-        1. UMA QUESTÃO REAL: Pesquise uma questão de concursos anteriores para este cargo/banca. Identifique: "✅ QUESTÃO REAL - Concurso: [Nome] | Banca: [Nome]".
-        2. UMA QUESTÃO INÉDITA: Crie uma questão nova baseada no edital. Identifique: "🆕 QUESTÃO INÉDITA - Criada por IA".
-        
-        REGRAS:
-        - Apresente o Gabarito e um COMENTÁRIO DIDÁTICO detalhado para cada uma.
-        - Se for tema recorrente, avise: "⚠️ Padrão Frequente desta Banca!".
-        - Use negrito para os títulos.`;
+        const prompt = `Atue como professor especialista. Com base em: ${infoConcurso}, gere EXATAMENTE 02 questões de múltipla escolha (A-E) com gabarito e comentário. Uma REAL e uma INÉDITA.`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -113,19 +104,22 @@ async function gerarDuasQuestoes() {
         });
 
         const data = await response.json();
-        
+
+        // Verifica se a IA respondeu corretamente
         if (data.candidates && data.candidates[0].content.parts[0].text) {
             const textoIA = data.candidates[0].content.parts[0].text;
+            
+            // Exibe o resultado
             contentArea.innerHTML = textoIA.replace(/\n/g, '<br>');
-            resultArea.classList.remove('hidden');
+            resultArea.classList.remove('hidden'); // Remove o "hidden" para mostrar a div
             status.innerText = "Simulado pronto!";
         } else {
-            throw new Error("Resposta da IA vazia");
+            status.innerText = "A IA não retornou dados. Verifique sua cota ou chave.";
         }
         
     } catch (e) {
-        status.innerText = "Erro ao gerar. Verifique sua API KEY ou conexão.";
-        console.error("Erro detalhado:", e);
+        console.error("Erro na IA:", e);
+        status.innerText = "Erro de conexão com a IA.";
     } finally {
         btn.disabled = false;
         btn.innerText = "🚀 Gerar Próximas 02 Questões";
@@ -171,6 +165,7 @@ async function salvarResultado() {
   </script>
 </body>
 </html>
+
 
 
 
